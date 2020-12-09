@@ -98,27 +98,28 @@ def set_J_vals(t, z, k_vals):
         gA_val = gA_val.where(sza<90).fillna(0)
 
     # Set them into k_vals vector
-    for i in range(len(reaction_lst)):
-        if k_vals[i] == None:
-            if reaction_lst[i].rate_constant.name == 'J1':
-                k_vals[i] = js.SRB + js.Herzberg
-            elif reaction_lst[i].rate_constant.name == 'J2':
-                k_vals[i] = js.Lya + js.SRC
-            elif reaction_lst[i].rate_constant.name == 'J3':
-                if 'J4' in [r.rate_constant.name for r in reaction_lst]:
-                    k_vals[i] = js.Huggins + js.Chappuis
-                elif 'J_o3' in [r.rate_constant.name for r in reaction_lst]:
-                    k_vals[i] = js.Huggins + js.Chappuis
-                else:
-                    k_vals[i] = js.Huggins + js.Chappuis + js.Hartley
-            elif reaction_lst[i].rate_constant.name == 'J4':
-                k_vals[i] = js.Hartley
-            elif reaction_lst[i].rate_constant.name == 'J_o3':
-                k_vals[i] = js.Hartley
-            elif reaction_lst[i].rate_constant.name == 'J7':
-                k_vals[i] = js.h2o2
-            elif reaction_lst[i].rate_constant.name == 'g_A':
-                k_vals[i] = gA_val
+    for i in [idx for idx, name in enumerate([r.rate_constant.name for r in reaction_lst]) 
+                if 'J' in name or 'g_' in name]:
+    # for i in range(len(reaction_lst)):
+        if reaction_lst[i].rate_constant.name == 'J1':
+            k_vals[i] = js.SRB + js.Herzberg
+        elif reaction_lst[i].rate_constant.name == 'J2':
+            k_vals[i] = js.Lya + js.SRC
+        elif reaction_lst[i].rate_constant.name == 'J3':
+            if 'J4' in [r.rate_constant.name for r in reaction_lst]:
+                k_vals[i] = js.Huggins + js.Chappuis
+            elif 'J_o3' in [r.rate_constant.name for r in reaction_lst]:
+                k_vals[i] = js.Huggins + js.Chappuis
+            else:
+                k_vals[i] = js.Huggins + js.Chappuis + js.Hartley
+        elif reaction_lst[i].rate_constant.name == 'J4':
+            k_vals[i] = js.Hartley
+        elif reaction_lst[i].rate_constant.name == 'J_o3':
+            k_vals[i] = js.Hartley
+        elif reaction_lst[i].rate_constant.name == 'J7':
+            k_vals[i] = js.h2o2
+        elif reaction_lst[i].rate_constant.name == 'g_A':
+            k_vals[i] = gA_val
     return k_vals
     
 # def get_js(t,z):
@@ -171,8 +172,6 @@ def f_ode_flat(y_flat_in, t, *func_ks):
         f_out[slc] *= D
         # chemical contributions
         k_vals_z = [func_k(T_val[i]) for func_k in func_ks]
-        # k_vals_z[:4] = list(get_js(t,z[i]))[:4] 
-        # k_vals_z[0] = get_js(t, z[i])[2]
         k_vals_z = set_J_vals(t, z[i], k_vals_z)
         y_fixed_vals_z = [c[i] for c in y_fixed_vals]
         f_out[slc] += f_ode(y_flat[slc], t, *tuple(k_vals_z), *tuple(y_fixed_vals_z)) 
@@ -180,16 +179,6 @@ def f_ode_flat(y_flat_in, t, *func_ks):
     # k_vals = tuple(list(get_js(t, z)) + [func_k(T_val) for func_k in func_ks] )
     # ydot_vals_flat = np.ravel(f_ode(y_flat.reshape(len(y_non_eq), len(z)), t, *k_vals, *y_fixed_vals))
     # return ydot_vals_flat
-
-def second_derivatives_spatial(i, state_flat, out):
-    k = np.clip(i, 1, len(y_non_eq) - 2)  #not sure what it means
-    out = np.empty(len(y_non_eq))
-    for j in range(len(y_non_eq)):
-        left = state_flat[(k-1)*len(y_non_eq) + j]
-        cent = state_flat[(k  )*len(y_non_eq) + j]
-        rght = state_flat[(k+1)*len(y_non_eq) + j]
-        out[j] = (left - 2*cent + rght)/np.gradient(z)[i]**2
-    return out
 
 def f_jcb_flat(y_flat_in, t, *func_ks):
     y_flat = y_flat_in.copy()
@@ -199,8 +188,6 @@ def f_jcb_flat(y_flat_in, t, *func_ks):
         #chemical contributions
         slc = slice(i*len(y_non_eq), (i+1)*len(y_non_eq))
         k_vals_z = [func_k(T_val[i]) for func_k in func_ks]
-        # k_vals_z[:4] = list(get_js(t,z[i]))[:4]
-        # k_vals_z[0] = get_js(t, z[i])[2]
         k_vals_z = set_J_vals(t, z[i], k_vals_z)
         y_fixed_vals_z = [c[i] for c in y_fixed_vals]
         j_out[slc, slc] = f_jcb(y_flat[slc], t, *tuple(k_vals_z), *tuple(y_fixed_vals_z)) 
@@ -212,6 +199,15 @@ def f_jcb_flat(y_flat_in, t, *func_ks):
             j_out[i*len(y_non_eq) + j, (k+1)*len(y_non_eq) + j] +=    D[j]/np.gradient(z)[i]**2
     return j_out
 
+def second_derivatives_spatial(i, state_flat, out):
+    k = np.clip(i, 1, len(y_non_eq) - 2)  #not sure what it means
+    out = np.empty(len(y_non_eq))
+    for j in range(len(y_non_eq)):
+        left = state_flat[(k-1)*len(y_non_eq) + j]
+        cent = state_flat[(k  )*len(y_non_eq) + j]
+        rght = state_flat[(k+1)*len(y_non_eq) + j]
+        out[j] = (left - 2*cent + rght)/np.gradient(z)[i]**2
+    return out
 
 # %% integration
 # to make y0 on o2del
@@ -223,7 +219,7 @@ def f_jcb_flat(y_flat_in, t, *func_ks):
 # o2del = o2del.set_density(f_o2del_eq(o3.density, *y_fixed_vals,  *k_vals))
 
 filename = 'NewJs_100less_HOx_{}.nc'
-model_round = 0
+model_round = 1
 while model_round<10: 
     print(filename.format(model_round))
     
@@ -234,7 +230,7 @@ while model_round<10:
                         for s in families[familyname]]) 
                         for familyname in families.keys()
                         ]+[o2del.density]
-        y0[0] = y0[0] * 0 #increase/decrease HOx
+        # y0[0] = y0[0] * 1.5 #increase/decrease HOx
     else:
         yout_save = xr.open_dataset('./ode_result/' + filename.format(model_round-1))
         t_last = yout_save.Ox.where(yout_save.Ox!=0, drop=True).t[-1]
@@ -271,7 +267,7 @@ while model_round<10:
     else:
         yout_save = xr.auto_combine([yout_save.sel(t=slice(t_last)), yout])
         
-    # yout_save.to_netcdf('./ode_result/' + filename.format(model_round))
+    yout_save.to_netcdf('./ode_result/' + filename.format(model_round))
     model_round += 1
         
 
