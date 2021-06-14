@@ -9,6 +9,7 @@ h2s = 3600
 
 from chem_classes import *
 
+
 #%% cross sections
 with xr.open_dataset('/home/anqil/Documents/Python/Photochemistry/xs_anqi.nc') as ds:
     ds = ds.sel(wavelength=~ds.indexes['wavelength'].duplicated())
@@ -123,7 +124,7 @@ def test_Js(t_s, ds, elv_max=90):
                                     ),
                     xs_lst = (so2, so3, sh2o2), 
                     name_lst = ('o2', 'o3', 'h2o2'))
-    J0 = ds_j.jo2.sel(wavelength=121.6, method='nearest').rename('Lya') #Ly-alpha line
+    J0 = ds_j.jo2.sel(wavelength=121.6, method='nearest').drop('wavelength').rename('Lya') #Ly-alpha line
     J1 = ds_j.jo2.sel(wavelength=slice(130, 175)).sum('wavelength').rename('SRC') #SRC
     J2 = ds_j.jo2.sel(wavelength=slice(175, 200)).sum('wavelength').rename('SRB') #SRB
     J3 = ds_j.jo2.sel(wavelength=slice(200, 242)).sum('wavelength').rename('Herzberg') #Herzberg
@@ -148,9 +149,9 @@ t_bins = np.linspace(0, 24*h2s, 24*60)
 t_bin_labels = t_bins[:-1] + (t_bins[1] - t_bins[0])/2
 js_mean = js_inspect.groupby_bins(js_inspect.t%(24*h2s), bins=t_bins, labels=t_bin_labels
                                 ).mean('t').rename(dict(t_bins='t'))
-# js_mean.to_netcdf('./Js_table_w3.nc')
+# js_mean.to_netcdf('./Js_table_v4.nc')
 
-#%%
+#%% plot o2 photolysis profiles
 js_mean.sel(t=12*3600, method='nearest'
     ).assign(dict(Total = js_mean.sel(t=12*3600, method='nearest'
     ).to_array('region'
@@ -158,8 +159,33 @@ js_mean.sel(t=12*3600, method='nearest'
     ).sum('region'
     ))).to_array('region'
     ).sel(region='Lya SRC SRB Herzberg Total'.split()
-    ).
     ).plot.line(y='z', hue='region', xscale='log', xlim=(1e-11, 1e-6))
+
+#%%  plot O3 photolysis profiles
+js = xr.open_dataset('./Js_table_v4.nc')
+band_regions = 'Hartley Huggins Chappuis'.split()
+js.sel(t=12*3600, method='nearest'
+    ).assign(dict(Total = js.sel(t=12*3600, method='nearest'
+        ).to_array('region'
+        ).sel(region=band_regions
+        ).sum('region'
+        ))).to_array('region'
+            ).sel(region=band_regions + ['Total']
+            ).plot.line(y='z', hue='region', xscale='log', xlim=None)
+
+#%%
+js = xr.open_dataset('./Js_table_w3.nc')
+js.sel(t=12*3600, method='nearest'
+    ).to_array('region'
+    ).sel(region='J3 J4'.split()
+    ).plot.line(y='z', hue='region', xscale='log', xlim=None)
+    
+# %% Compare two J tables 
+xr.open_dataset('./Js_table_w2.nc').pipe(lambda x: -(js_mean-x)/js_mean*100
+    ).J1.plot.line(x='t', yscale='log')
+# plt.gca().set_xticklabels(plt.gca().get_xticks()/3600)
+plt.ylabel('% differences')
+plt.title('J (O2->2O) changes from no SRB to interpolated SRB')
 
 # %% Play with the cross section file
 with xr.open_dataset('/home/anqil/Documents/Python/Photochemistry/xs_anqi.nc') as ds:
@@ -179,11 +205,5 @@ with xr.open_dataset('/home/anqil/Documents/Python/Photochemistry/xs_anqi.nc') a
     plt.fill_betweenx([1e-25, 1e-16], 177.5, 256, label='O2 -> 2O', alpha=0.2)
     plt.legend()
     plt.title('O2 cross section')
-# %% Compare two J tables 
-xr.open_dataset('./Js_table_w2.nc').pipe(lambda x: -(js_mean-x)/js_mean*100
-    ).J1.plot.line(x='t', yscale='log')
-# plt.gca().set_xticklabels(plt.gca().get_xticks()/3600)
-plt.ylabel('% differences')
-plt.title('J (O2->2O) changes from no SRB to interpolated SRB')
 
 # %%
