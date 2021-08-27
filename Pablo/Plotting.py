@@ -3,8 +3,8 @@ import xarray as xr
 import numpy as np
 
 #%% plot all Js
-lat = 20
-month = 9
+lat = 80
+month = 6
 with xr.open_dataset('./results_nc/Js_{}_{}.nc'.format(month, lat)) as Js:
     # print(Js)
     Js = Js.assign_coords(t=Js.t/3600)
