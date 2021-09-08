@@ -4,16 +4,16 @@ import numpy as np
 
 #%% plot all Js
 lat = 80
-month = 6
-with xr.open_dataset('./results_nc/Js_{}_{}.nc'.format(month, lat)) as Js:
-    # print(Js)
-    Js = Js.assign_coords(t=Js.t/3600)
-    Js.drop_vars(['month', 'lat']).to_array('var').plot(
-        x='t', hue='z', col='var', 
-        col_wrap=3, sharey=False, yscale='linear',
-    );
+month = 10
+# with xr.open_dataset('./results_nc/Js_{}_{}.nc'.format(month, lat)) as Js:
+#     # print(Js)
+#     Js = Js.assign_coords(t=Js.t/3600)
+#     Js.drop_vars(['month', 'lat']).to_array('var').plot(
+#         x='t', hue='z', col='var', 
+#         col_wrap=3, sharey=False, yscale='linear',
+#     );
 ## %% plot all simulation days
-with xr.open_dataset('./results_nc/sim2_{}_{}.nc'.format(month, lat)) as ds:
+with xr.open_dataset('./results_nc/J2_factor2/sim2_{}_{}.nc'.format(month, lat)) as ds:
     # print(ds)
     ds.drop_vars(['month', 'lat']).to_array('species').plot(
         x='t', hue='z', col='species', 

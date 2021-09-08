@@ -13,10 +13,15 @@ import pandas as pd
 from multiprocessing import Pool
 import sys
 
+path = '/home/anqil/Documents/Python/Photochemistry/Pablo/'
+path_datasave = 'results_nc/OOM_J3/'
+
 # %%
 #ALL INITIAL NUMBERDENSITY (AT NOON) AND BACKGROUND ATMOSPHERE
 month = int(sys.argv[1])
 lat = int(sys.argv[2])
+# month = 1
+# lat = 0
 
 #number density O family
 n_o    = np.array([1.8e9, 2.6e9, 2.9e9, 2.6e9, 2.1e9, 1.9e9, 5.2e9, 5.0e10, 2.0e11, 3.4e11, 4.0e11, 4.9e11, 4.6e11])
@@ -41,8 +46,23 @@ n_table = xr.DataArray(
     coords=(species,z_table),
     dims=('species','z')
 ).to_dataset('species')
-T_table = xr.DataArray(T, coords=(z_table,), dims=('z',))
+# T_table = xr.DataArray(T, coords=(z_table,), dims=('z',))
 
+#%%
+file = '/home/anqil/Documents/Python/external_data/msis_cmam_climatology_z200_lat8576.nc'
+with xr.open_dataset(file) as ds_bg:
+    T_table = ds_bg.T.interp(
+        month=month,
+        lat=lat,
+        z=z_table,
+        kwargs=dict(fill_value='extrapolate')
+        )
+    p_table = ds_bg.plev.interp(
+        month=month,
+        lat=lat,
+        z=z_table,
+        kwargs=dict(fill_value='extrapolate')
+        )
 #%%
 # EXTRAPOLATION OF O, O2, O3 FOR 120KM AND 130KM FOR PHOTOLYSIS CALCULATIONS
 z_model_extended = np.array(z_table.tolist() + np.arange(z_table[-1]+10, 130+10, 10).tolist())
@@ -60,6 +80,7 @@ n_co2_extended = n_o2_extended / 565.0
 #%% model domain and initial conditions
 z_model = np.arange(65,110,5) #km
 T = T_table.interp(z=z_model, kwargs=dict(fill_value='extrapolate')).values
+pres = p_table.interp(z=z_model, kwargs=dict(fill_value='extrapolate')).values
 n = n_table.pipe(np.log).interp(
     z=z_model, kwargs=dict(fill_value='extrapolate')
     ).pipe(np.exp).fillna(0)
@@ -76,14 +97,13 @@ n_h = n.H.values
 
 
 #%%
-# OBTAINING THE PRESSURE AT EACH ALTITUDE BASED ON MY TEMPERATURES FOR gA
-Kb = 1.380649e-23 # J/K Boltzmans constant
-N = n_o2*5 + n_o
-pres = 1e6*N*Kb*T
+# # OBTAINING THE PRESSURE AT EACH ALTITUDE BASED ON MY TEMPERATURES FOR gA
+# Kb = 1.380649e-23 # J/K Boltzmans constant
+# N = n_o2*5 + n_o
+# pres = 1e6*N*Kb*T
 
 # %%
 # CROSS SECTIONS
-path = '/home/anqil/Documents/Python/Photochemistry/Pablo/'
 data_sigma = loadmat(path+'sigma.mat')
 irrad = data_sigma['irrad']            
 sn2 = data_sigma['sN2']            
@@ -470,6 +490,12 @@ def create_J2(h,t):
         return interp1d(t_day,eval(string + ".tolist()"))(t)
     return function
 
+def create_J3(h,t):
+    def function():
+        string = 'J3_day' + "[" + str(h) + ",:]"
+        return interp1d(t_day,eval(string + ".tolist()"))(t)
+    return function
+
 def create_J4(h,t):
     def function():
         string = 'J4_day' + "[" + str(h) + ",:]"
@@ -503,6 +529,12 @@ def create_new_J2(h,t):
         return interp1d(t_day,eval(string + ".tolist()"))(t)
     return function
 
+def create_new_J3(h,t):
+    def function():
+        string = 'new_J3_day' + "[" + str(h) + ",:]"
+        return interp1d(t_day,eval(string + ".tolist()"))(t)
+    return function
+
 def create_new_J4(h,t):
     def function():
         string = 'new_J4_day' + "[" + str(h) + ",:]"
@@ -519,11 +551,11 @@ def norm_t(t):
 # ALTITUDE IN THE SIMULATION PROGRAM
 
 def rates():
-    string = ['create_J1', 'create_J2', 'create_J4', 'create_G']
+    string = ['create_J1', 'create_J2', 'create_J3','create_J4', 'create_G']
     return string
 
 def new_rates():
-    string = ['create_new_J1', 'create_new_J2', 'create_new_J4', 'create_new_G']
+    string = ['create_new_J1', 'create_new_J2', 'create_new_J3','create_new_J4', 'create_new_G']
     return string
 
 
@@ -533,7 +565,7 @@ def new_rates():
 # STARTING AT MIDDAY (12:00) OF THE 1ST DAY AND 
 # FINISHING AT MIDNITH (12:00) OF THE 4RD DAY 
 # FOR A TOTAL OF 4 DAYS OF INTEGRATION
-# WITH A TIME STEP OF 5 MINUTES
+# WITH A TIME STEP OF 15 MINUTES
 #
 #
 # RATES TO BE UPDATED TO ANQI'S
@@ -541,28 +573,27 @@ def simulation(z, rates, tout, x0):
     print('z={}km'.format(z_model[z]))
     photolysis_rates = rates()
     
-    def system(values, t):
-        #First the concentrations
-        
-        O3        = values[0]     
-        O2        = values[1]     
-        O2_1Delta = values[2]
-        O2_1Sigma = values[3]    
-        O         = values[4] 
-        O_1D      = values[5]       
-        OH        = values[6]      
-        HO2       = values[7]      
-        H         = values[8]         
+    def system(x, t):
+        O3        = x[0]     
+        O2        = x[1]     
+        O2_1Delta = x[2]
+        O2_1Sigma = x[3]    
+        O         = x[4] 
+        O_1D      = x[5]       
+        OH        = x[6]      
+        HO2       = x[7]      
+        H         = x[8]         
         N2        = 4.0*O2
         M         = O2 + N2
         
         #O3 reactions & rates
-        
-        J4 = eval(photolysis_rates[2] + "(z,norm_t(t))()")
+        J3 = eval(photolysis_rates[2] + "(z,norm_t(t))()")
+        J4 = eval(photolysis_rates[3] + "(z,norm_t(t))()")
         k2 = 1.0e-10*np.exp(-516/T[z])
         k3 = 1.5e-12*np.exp(-1000/T[z])
         
-        r1 = J4 * O3 
+        r1a = J3 * O3 
+        r1b = J4 * O3
         r2 = k2 * O3 * H 
         r3 = k3 * O3 * OH
         
@@ -610,9 +641,11 @@ def simulation(z, rates, tout, x0):
         
         k15 = 4.2e-11
         k16 = 3.5e-11
-        
+        k_oom = 9.59e-34*np.exp(480/T[z]) #O+O+M Allen (1984) 
+
         r15 = k15 * O * OH 
         r16 = k16 * O * HO2 
+        r_oom = k_oom * O * O * M 
         
         #O_1D reactions
         
@@ -626,12 +659,12 @@ def simulation(z, rates, tout, x0):
         
         
         #The system of equations
-        dO3dt        = - r1 - r2 - r3 + r4
-        dO2dt        = r2 + r3 - r4 - r5 - r6 - r7 + r8 + r9 + r10 + r15 + r16 - r18 - r20 + r21 + r22
-        dO2_1Deltadt = r1 - r8 - r9 - r10 + r11 + r12 + r13 + r14 - r21
-        dO2_1Sigmadt = - r11 - r12 - r13 - r14 + r18 + r20 - r22
-        dOdt         = - r4 + 2*r6 + r7 - r15 - r16 + r17 + r18 + r19
-        dO_1Ddt      = r1 + r7 - r17 - r18 - r19
+        dO3dt        = - r1a - r1b - r2 - r3 + r4
+        dO2dt        = r1a + r2 + r3 - r4 - r5 - r6 - r7 + r8 + r9 + r10 + r15 + r16 - r18 - r20 + r21 + r22
+        dO2_1Deltadt = r1b - r8 - r9 - r10 + r11 + r12 + r13 + r14 - r21
+        dO2_1Sigmadt = - r11 - r12 - r13 - r14 + r18 + r20 - r22 + 2*r_oom
+        dOdt         = ra1 - r4 + 2*r6 + r7 - r15 - r16 + r17 + r18 + r19 - 2*r_oom
+        dO_1Ddt      = r1b + r7 - r17 - r18 - r19
         dOHdt        = r2 - r3 - r15 + r16 
         dHO2dt       = r3 - r16 + r5
         dHdt         = - r2 - r5 + r15
@@ -646,12 +679,12 @@ def simulation(z, rates, tout, x0):
                 dHO2dt,
                 dHdt]
 
-    yout = odeint(
+    x_out = odeint(
         system, x0, tout, 
         mxstep=5000,#5000000, 
         # hmin=1,
         )
-    return yout
+    return x_out
 
 # %%
 # INTERPOLATION OF O2 AND O3 PHOTOLYSIS RATES WITH 
@@ -714,7 +747,7 @@ da_Js.to_dataset('species').assign_coords(
     sza=xr.DataArray(Xi, dims=('t',)), 
     month=month,
     lat=lat
-    ).to_netcdf(path+'results_nc/Js_{}_{}.nc'.format(month, lat), mode='w')
+    ).to_netcdf(path+path_datasave+'Js_{}_{}.nc'.format(month, lat), mode='w')
 
 # %%
 #running all simulations
@@ -741,7 +774,7 @@ sim1 = xr.DataArray(
     )
 sim1.to_dataset('species').assign_coords(
     month=month, lat=lat
-    ).to_netcdf(path+'results_nc/sim1_{}_{}.nc'.format(month,lat))
+    ).to_netcdf(path+path_datasave+'sim1_{}_{}.nc'.format(month,lat))
 
 # %%
 # GETTING THE NEW O & O3 AS FUNCTION OF TIME IN A DAY
@@ -796,7 +829,7 @@ da_Js = xr.DataArray(
         ),
     )
 da_Js.to_dataset('species').to_netcdf(
-    path+'results_nc/Js_{}_{}.nc'.format(month, lat), mode='a')
+    path+path_datasave+'Js_{}_{}.nc'.format(month, lat), mode='a')
 
 # %%
 #running all simulations again
@@ -822,6 +855,6 @@ xr.concat(
     [sim1,sim2], dim='t'
     ).to_dataset('species').assign_coords(
         month=month, lat=lat
-        ).to_netcdf(path+'results_nc/sim2_{}_{}.nc'.format(month,lat))
+        ).to_netcdf(path+path_datasave+'sim2_{}_{}.nc'.format(month,lat))
 
 # %%

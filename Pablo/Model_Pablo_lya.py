@@ -14,99 +14,73 @@ from multiprocessing import Pool
 import sys
 
 # %%
-#HERE I DEFINE THE FUNCTION FOR THE gA 
+#ALL INITIAL NUMBERDENSITY (AT NOON) AND BACKGROUND ATMOSPHERE
+month = int(sys.argv[1])
+lat = int(sys.argv[2])
+factor = 2 #factor to multiply J2
 
-def gA (pres,sol_zen):
-    #pressure in Pa. solar zenith angle in degreea
-    d2r=np.pi/180
-    logp85corr=np.array([-7,
-                        -5.51677832e+00, -5.47384432e+00, -5.43035414e+00, -5.38628065e+00,
-                           -5.34159539e+00, -5.29626675e+00, -5.25026155e+00, -5.20354361e+00,
-                           -5.15607393e+00, -5.10780999e+00, -5.05870658e+00, -5.00871335e+00,
-                           -4.95777577e+00, -4.90583479e+00, -4.85282478e+00, -4.79867481e+00,
-                           -4.74330466e+00, -4.68662766e+00, -4.62854591e+00, -4.56895088e+00,
-                           -4.50771994e+00, -4.44471559e+00, -4.37978159e+00, -4.31273936e+00,
-                           -4.24338432e+00, -4.17132701e+00, -4.09649172e+00, -4.01787775e+00,
-                           -3.93488221e+00, -3.84698185e+00, -3.75373381e+00, -3.65477858e+00,
-                           -3.54984201e+00, -3.43873830e+00, -3.32137346e+00, -3.19774914e+00,
-                           -3.06796702e+00, -2.93223248e+00, -2.79085945e+00, -2.64426997e+00,
-                           -2.49295172e+00, -2.33741388e+00, -2.17818109e+00, -2.01579135e+00,
-                           -1.85079156e+00, -1.68373602e+00, -1.51517955e+00, -1.34567416e+00,
-                           -1.17576692e+00, -1.00599335e+00, -8.36835949e-01, -6.68690824e-01,
-                           -5.01857914e-01, -3.36553552e-01, -1.72910030e-01, -1.09823693e-02,
-                            1.49248401e-01,  3.07869289e-01,  4.65037639e-01,  6.20978983e-01,
-                            7.75935063e-01,  9.30116637e-01,  1.08370375e+00,  1.23684995e+00,
-                            1.38969194e+00,  1.54234146e+00,  1.69489018e+00,  1.84741160e+00,
-                            1.99995226e+00,  2.15253138e+00,  2.30514089e+00,  2.45774140e+00,
-                            2.61026531e+00,  2.76260989e+00,  2.91464127e+00,  3.06619577e+00,
-                            3.21681565e+00,  3.36683997e+00,  3.51585920e+00,  3.66374439e+00,
-                            3.81038797e+00,  3.95570377e+00,  4.09962606e+00,  4.24211127e+00,
-                            4.38313591e+00,  4.52269886e+00,  4.66077268e+00,  4.79739872e+00,
-                            4.93268741e+00,  5.06672307e+00,  5.19961223e+00,  5.33148235e+00,
-                            5.46248364e+00,  5.59278767e+00,  5.72258652e+00,  5.85207645e+00,
-                            5.98144222e+00,  6.11085417e+00,  6.24046914e+00,  6.37042997e+00,
-                            6.50086777e+00,  6.63189673e+00,  6.76361868e+00,  6.89612274e+00,
-                            7.02948333e+00,  7.16377947e+00,  7.29910627e+00,  7.43558281e+00,
-                            7.57334199e+00,  7.71254137e+00,  7.85335655e+00,  7.99598192e+00,
-                            8.14063480e+00,  8.28755019e+00,  8.43698424e+00,  8.58921219e+00,
-                            8.74451770e+00,  8.90288700e+00,  9.06399760e+00,  9.22751350e+00,
-                            9.39309728e+00,  9.56041150e+00,  9.72911829e+00,  9.89887894e+00,
-                            1.00693539e+01,  1.02402039e+01,  1.04110887e+01,  1.05816670e+01,
-                            1.07515973e+01,  1.09205436e+01,  1.10882395e+01,  1.12545533e+01,
-                            1.14194944e+01,  1.15832126e+01,  1.17459852e+01,  1.19080569e+01,
-                            1.20694783e+01,  1.22300895e+01,  1.23895218e+01,  1.25472100e+01,
-                            1.27025577e+01,  1.28551028e+01,  1.30045306e+01,  1.31506769e+01,
-                            1.32935274e+01,  1.34332177e+01,  1.35700338e+01,  1.37044140e+01,
-                            1.38369482e+01])
-    gA85=np.array([6.01966695e-09,
-                      6.01966695e-09, 6.02587341e-09, 6.03218597e-09, 6.03859833e-09,
-                       6.04510289e-09, 6.05168540e-09, 6.05834330e-09, 6.06506815e-09,
-                       6.07185745e-09, 6.07869647e-09, 6.08555677e-09, 6.09239934e-09,
-                       6.09919568e-09, 6.10595726e-09, 6.11270653e-09, 6.11940893e-09,
-                       6.12599011e-09, 6.13234353e-09, 6.13849983e-09, 6.14447565e-09,
-                       6.15022153e-09, 6.15566047e-09, 6.16073693e-09, 6.16539715e-09,
-                       6.16960128e-09, 6.17321804e-09, 6.17695239e-09, 6.17986846e-09,
-                       6.18178900e-09, 6.18268123e-09, 6.18263075e-09, 6.18181491e-09,
-                       6.18044779e-09, 6.17870756e-09, 6.17668143e-09, 6.17449626e-09,
-                       6.17228934e-09, 6.17013865e-09, 6.16804327e-09, 6.16602142e-09,
-                       6.16406432e-09, 6.16215159e-09, 6.16025809e-09, 6.15835221e-09,
-                       6.15639631e-09, 6.15434861e-09, 6.15216000e-09, 6.14977859e-09,
-                       6.14714626e-09, 6.14420110e-09, 6.14085091e-09, 6.13699440e-09,
-                       6.13252618e-09, 6.12732723e-09, 6.12127318e-09, 6.11421388e-09,
-                       6.10598205e-09, 6.09638051e-09, 6.08515375e-09, 6.07201408e-09,
-                       6.05665884e-09, 6.03874578e-09, 6.01789083e-09, 5.99361562e-09,
-                       5.96540859e-09, 5.93266855e-09, 5.89472001e-09, 5.85079398e-09,
-                       5.80007682e-09, 5.74164332e-09, 5.67455148e-09, 5.59781436e-09,
-                       5.51046272e-09, 5.41158287e-09, 5.30039017e-09, 5.17632952e-09,
-                       5.03909803e-09, 4.88847600e-09, 4.72441570e-09, 4.54723454e-09,
-                       4.35763107e-09, 4.15659391e-09, 3.94539467e-09, 3.72591842e-09,
-                       3.49997101e-09, 3.26985614e-09, 3.03790245e-09, 2.80664703e-09,
-                       2.57843685e-09, 2.35560644e-09, 2.14019809e-09, 1.93391038e-09,
-                       1.73819559e-09, 1.55412510e-09, 1.38243550e-09, 1.22386922e-09,
-                       1.07889518e-09, 9.47556249e-10, 8.29514941e-10, 7.24348205e-10,
-                       6.31192667e-10, 5.49258359e-10, 4.77617578e-10, 4.15295219e-10,
-                       3.61346281e-10, 3.14734252e-10, 2.74629039e-10, 2.40185833e-10,
-                       2.10747943e-10, 1.85758850e-10, 1.64740457e-10, 1.47285856e-10,
-                       1.33077259e-10, 1.21871725e-10, 1.13393656e-10, 1.07459137e-10,
-                       1.04010969e-10, 1.03088945e-10, 1.04181492e-10, 1.06761555e-10,
-                       1.10283829e-10, 1.14163747e-10, 1.17858983e-10, 1.20840878e-10,
-                       1.22552573e-10, 1.22901409e-10, 1.21936774e-10, 1.20066944e-10,
-                       1.17083445e-10, 1.13360779e-10, 1.08783137e-10, 1.03570401e-10,
-                       9.75917826e-11, 9.11088954e-11, 8.39765842e-11, 7.61178745e-11,
-                       6.79935241e-11, 6.17932461e-11, 6.17966997e-11, 6.21686621e-11,
-                       6.17810163e-11, 5.90059283e-11, 5.41402204e-11, 4.69897160e-11,
-                       3.96540264e-11, 3.32432305e-11, 2.83111959e-11, 2.46175330e-11,
-                       2.17711145e-11])
-    coeff=np.array([-3.90433229e-19,  1.99584747e-16, -4.47281751e-14,  5.77512092e-12,
-           -4.74851914e-10,  2.59465839e-08, -9.54424055e-07,  2.34369889e-05,
-           -3.73174981e-04,  3.64483013e-03, -1.98135679e-02,  5.00956221e-02,
-           -3.95132483e-02])
-    presscale=np.exp(np.polyval(coeff,sol_zen))
-    g=np.interp(np.log(pres/np.cos(sol_zen*d2r)*presscale),logp85corr,gA85)
-    if sol_zen > 90:
-        g = 0.0
-    return g
+#number density O family
+n_o    = np.array([1.8e9, 2.6e9, 2.9e9, 2.6e9, 2.1e9, 1.9e9, 5.2e9, 5.0e10, 2.0e11, 3.4e11, 4.0e11, 4.9e11, 4.6e11])
+n_o_1D = np.array([1.9e2, 1.5e2, 9.8e1, 5.2e1, 2.4e1, 1.3e1, 1.5e1, 3.3e1,  7.0e1,  8.9e1,  1.4e2, 3.2e2, 7.8e2])
+n_o2        = np.array([4.8e15, 2.4e15, 1.2e15, 6.5e14, 3.4e14, 1.7e14, 8.6e13, 4.2e13, 2.0e13, 1.0e13, 5.0e12, 2.2e12, 7.7e11])
+n_o2_1Delta = np.zeros_like(n_o2)
+n_o2_1Sigma = np.zeros_like(n_o2)
+n_o3 = np.array([5.7e10, 1.9e10, 7.6e9, 3.5e9, 1.5e9, 4e8, 6.9e7, 9.9e7, 1.6e8, 1.3e8, 8.3e7, 3.8e7, 6.5e6])
 
+#number density H family
+n_oh = np.array([6.8e6,4.6e6,3.2e6,2.8e6,3.2e6,3.4e6,3.1e6,4.9e5,5.9e4,1.3e4,3.4e3, 6.0e2, 6.5e1])
+n_ho2 = np.array([4.0e6,2.7e6,1.9e6,1.5e6,1.5e6,1.5e6,1.2e6,1.3e5,4.0e3,3.3e2,4.0e1, 2.9e0, 2.1e-1])
+n_h = np.array([9.9e4,3.6e5,9.7e5,2.5e6,6.8e6,2.1e7,7.9e7,2.4e8,2.0e8,1.2e8,6.3e7, 3.2e7, 1.6e7])
+
+#background atmosphere
+T = np.array([253.7,247.2, 235.4, 220.6, 207.3, 198.0, 195.3, 195.4, 192.5, 185.2, 176.3, 177.6, 192.5])
+z_table = np.arange(50, 115, 5)
+
+species = 'O3,O2,O2_1Delta,O2_1Sigma,O,O_1D,OH,HO2,H'.split(',')
+n_table = xr.DataArray(
+    np.stack([n_o3, n_o2, n_o2_1Delta, n_o2_1Sigma, n_o, n_o_1D, n_oh, n_ho2, n_h]),
+    coords=(species,z_table),
+    dims=('species','z')
+).to_dataset('species')
+T_table = xr.DataArray(T, coords=(z_table,), dims=('z',))
+
+#%%
+# EXTRAPOLATION OF O, O2, O3 FOR 120KM AND 130KM FOR PHOTOLYSIS CALCULATIONS
+z_model_extended = np.array(z_table.tolist() + np.arange(z_table[-1]+10, 130+10, 10).tolist())
+T_extended = T_table.interp(z=z_model_extended, kwargs=dict(fill_value='extrapolate')).values
+n_extended = n_table.pipe(np.log).interp(
+    z=z_model_extended, kwargs=dict(fill_value='extrapolate')
+    ).pipe(np.exp).fillna(0)
+
+n_o_extended = n_extended.O.values
+n_o2_extended = n_extended.O2.values
+n_o3_extended = n_extended.O3.values
+n_n2_extended = 4 * n_o2_extended
+n_co2_extended = n_o2_extended / 565.0
+
+#%% model domain and initial conditions
+z_model = np.arange(65,110,5) #km
+T = T_table.interp(z=z_model, kwargs=dict(fill_value='extrapolate')).values
+n = n_table.pipe(np.log).interp(
+    z=z_model, kwargs=dict(fill_value='extrapolate')
+    ).pipe(np.exp).fillna(0)
+
+n_o = n.O.values
+n_o_1D = n.O_1D.values
+n_o2 = n.O2.values
+n_o2_1Delta = n.O2_1Delta.values
+n_o2_1Sigma = n.O2_1Sigma.values
+n_o3 = n.O3.values
+n_oh = n.OH.values
+n_ho2 = n.HO2.values
+n_h = n.H.values
+
+
+#%%
+# OBTAINING THE PRESSURE AT EACH ALTITUDE BASED ON MY TEMPERATURES FOR gA
+Kb = 1.380649e-23 # J/K Boltzmans constant
+N = n_o2*5 + n_o
+pres = 1e6*N*Kb*T
 
 # %%
 # CROSS SECTIONS
@@ -308,50 +282,6 @@ def effxsect(Temp, O2col):
         Xsect.append(np.exp(A*(Temp-220)+B))
     return np.array(Xsect)
 
-
-# %%
-#ALL INITIAL NUMBERDENSITY (AT NOON) AND BACKGROUND ATMOSPHERE
-
-#number density O family
-n_o    = np.array([1.8e9, 2.6e9, 2.9e9, 2.6e9, 2.1e9, 1.9e9, 5.2e9, 5.0e10, 2.0e11, 3.4e11, 4.0e11, 4.9e11, 4.6e11])
-n_o_1D = np.array([1.9e2, 1.5e2, 9.8e1, 5.2e1, 2.4e1, 1.3e1, 1.5e1, 3.3e1,  7.0e1,  8.9e1,  1.4e2, 3.2e2, 7.8e2])
-n_o2        = np.array([4.8e15, 2.4e15, 1.2e15, 6.5e14, 3.4e14, 1.7e14, 8.6e13, 4.2e13, 2.0e13, 1.0e13, 5.0e12, 2.2e12, 7.7e11])
-n_o2_1Delta = np.zeros_like(n_o2)
-n_o2_1Sigma = np.zeros_like(n_o2)
-n_o3 = np.array([5.7e10, 1.9e10, 7.6e9, 3.5e9, 1.5e9, 4e8, 6.9e7, 9.9e7, 1.6e8, 1.3e8, 8.3e7, 3.8e7, 6.5e6])
-
-#number density N family
-n_n2 = 4 * n_o2
-
-#number density CO2
-n_co2 = n_o2 / 565.0
-
-#number density H family
-n_oh = np.array([6.8e6,4.6e6,3.2e6,2.8e6,3.2e6,3.4e6,3.1e6,4.9e5,5.9e4,1.3e4,3.4e3, 6.0e2, 6.5e1])
-n_ho2 = np.array([4.0e6,2.7e6,1.9e6,1.5e6,1.5e6,1.5e6,1.2e6,1.3e5,4.0e3,3.3e2,4.0e1, 2.9e0, 2.1e-1])
-n_h = np.array([9.9e4,3.6e5,9.7e5,2.5e6,6.8e6,2.1e7,7.9e7,2.4e8,2.0e8,1.2e8,6.3e7, 3.2e7, 1.6e7])
-
-#background atmosphere
-T = np.array([253.7,247.2, 235.4, 220.6, 207.3, 198.0, 195.3, 195.4, 192.5, 185.2, 176.3, 177.6, 192.5])
-heights = np.arange(50, 115, 5)
-
-# %%
-# EXTRAPOLATION OF O, O2, O3 FOR 120KM AND 130KM FOR PHOTOLYSIS CALCULATIONS
-heights2 = np.array(heights.tolist() + np.arange(heights[-1]+10, 130+10, 10).tolist())
-T_extrapolated = interp1d(heights, T, fill_value='extrapolate')(heights2)
-
-n_o_extrapolated = np.exp(interp1d(heights, np.log(n_o), fill_value='extrapolate')(heights2))
-n_o2_extrapolated = np.exp(interp1d(heights, np.log(n_o2), fill_value='extrapolate')(heights2))
-n_o3_extrapolated = np.exp(interp1d(heights, np.log(n_o3), fill_value='extrapolate')(heights2))
-n_n2_extrapolated = 4 * n_o2_extrapolated
-n_co2_extrapolated = n_o2_extrapolated / 565.0
-
-# %%
-# OBTAINING THE PRESSURE AT EACH ALTITUDE BASED ON MY TEMPERATURES FOR gA
-Kb = 1.380649e-23 # J/K Boltzmans constant
-N = n_n2 + n_o2 + n_o
-pres = N*Kb*T*1e6
-
 # %%
 # FITTING O2 TO AN EXPONENTIAL CURVE TO EASE THE O2 column density CALCULATION 
 # FOR THE SCHUMANN RUNGE BANDS PROGRAM 
@@ -368,9 +298,101 @@ def no2_fit(x, a, b):
 def O2_column(alt, alt_top): 
     #alt in km
     p0 = [10**17,3]
-    popt, pcov = curve_fit(no2_fit, heights, n_o2, p0 = p0)
+    popt, pcov = curve_fit(no2_fit, z_model, n_o2, p0 = p0)
     n0, H = popt
     return H * 1e5 * n0 * (np.exp(-alt/H)-np.exp(-alt_top/H))
+
+
+def gA (pres,sol_zen):
+    #pressure in Pa. solar zenith angle in degreea
+    d2r=np.pi/180
+    logp85corr=np.array([-7,
+                        -5.51677832e+00, -5.47384432e+00, -5.43035414e+00, -5.38628065e+00,
+                           -5.34159539e+00, -5.29626675e+00, -5.25026155e+00, -5.20354361e+00,
+                           -5.15607393e+00, -5.10780999e+00, -5.05870658e+00, -5.00871335e+00,
+                           -4.95777577e+00, -4.90583479e+00, -4.85282478e+00, -4.79867481e+00,
+                           -4.74330466e+00, -4.68662766e+00, -4.62854591e+00, -4.56895088e+00,
+                           -4.50771994e+00, -4.44471559e+00, -4.37978159e+00, -4.31273936e+00,
+                           -4.24338432e+00, -4.17132701e+00, -4.09649172e+00, -4.01787775e+00,
+                           -3.93488221e+00, -3.84698185e+00, -3.75373381e+00, -3.65477858e+00,
+                           -3.54984201e+00, -3.43873830e+00, -3.32137346e+00, -3.19774914e+00,
+                           -3.06796702e+00, -2.93223248e+00, -2.79085945e+00, -2.64426997e+00,
+                           -2.49295172e+00, -2.33741388e+00, -2.17818109e+00, -2.01579135e+00,
+                           -1.85079156e+00, -1.68373602e+00, -1.51517955e+00, -1.34567416e+00,
+                           -1.17576692e+00, -1.00599335e+00, -8.36835949e-01, -6.68690824e-01,
+                           -5.01857914e-01, -3.36553552e-01, -1.72910030e-01, -1.09823693e-02,
+                            1.49248401e-01,  3.07869289e-01,  4.65037639e-01,  6.20978983e-01,
+                            7.75935063e-01,  9.30116637e-01,  1.08370375e+00,  1.23684995e+00,
+                            1.38969194e+00,  1.54234146e+00,  1.69489018e+00,  1.84741160e+00,
+                            1.99995226e+00,  2.15253138e+00,  2.30514089e+00,  2.45774140e+00,
+                            2.61026531e+00,  2.76260989e+00,  2.91464127e+00,  3.06619577e+00,
+                            3.21681565e+00,  3.36683997e+00,  3.51585920e+00,  3.66374439e+00,
+                            3.81038797e+00,  3.95570377e+00,  4.09962606e+00,  4.24211127e+00,
+                            4.38313591e+00,  4.52269886e+00,  4.66077268e+00,  4.79739872e+00,
+                            4.93268741e+00,  5.06672307e+00,  5.19961223e+00,  5.33148235e+00,
+                            5.46248364e+00,  5.59278767e+00,  5.72258652e+00,  5.85207645e+00,
+                            5.98144222e+00,  6.11085417e+00,  6.24046914e+00,  6.37042997e+00,
+                            6.50086777e+00,  6.63189673e+00,  6.76361868e+00,  6.89612274e+00,
+                            7.02948333e+00,  7.16377947e+00,  7.29910627e+00,  7.43558281e+00,
+                            7.57334199e+00,  7.71254137e+00,  7.85335655e+00,  7.99598192e+00,
+                            8.14063480e+00,  8.28755019e+00,  8.43698424e+00,  8.58921219e+00,
+                            8.74451770e+00,  8.90288700e+00,  9.06399760e+00,  9.22751350e+00,
+                            9.39309728e+00,  9.56041150e+00,  9.72911829e+00,  9.89887894e+00,
+                            1.00693539e+01,  1.02402039e+01,  1.04110887e+01,  1.05816670e+01,
+                            1.07515973e+01,  1.09205436e+01,  1.10882395e+01,  1.12545533e+01,
+                            1.14194944e+01,  1.15832126e+01,  1.17459852e+01,  1.19080569e+01,
+                            1.20694783e+01,  1.22300895e+01,  1.23895218e+01,  1.25472100e+01,
+                            1.27025577e+01,  1.28551028e+01,  1.30045306e+01,  1.31506769e+01,
+                            1.32935274e+01,  1.34332177e+01,  1.35700338e+01,  1.37044140e+01,
+                            1.38369482e+01])
+    gA85=np.array([6.01966695e-09,
+                      6.01966695e-09, 6.02587341e-09, 6.03218597e-09, 6.03859833e-09,
+                       6.04510289e-09, 6.05168540e-09, 6.05834330e-09, 6.06506815e-09,
+                       6.07185745e-09, 6.07869647e-09, 6.08555677e-09, 6.09239934e-09,
+                       6.09919568e-09, 6.10595726e-09, 6.11270653e-09, 6.11940893e-09,
+                       6.12599011e-09, 6.13234353e-09, 6.13849983e-09, 6.14447565e-09,
+                       6.15022153e-09, 6.15566047e-09, 6.16073693e-09, 6.16539715e-09,
+                       6.16960128e-09, 6.17321804e-09, 6.17695239e-09, 6.17986846e-09,
+                       6.18178900e-09, 6.18268123e-09, 6.18263075e-09, 6.18181491e-09,
+                       6.18044779e-09, 6.17870756e-09, 6.17668143e-09, 6.17449626e-09,
+                       6.17228934e-09, 6.17013865e-09, 6.16804327e-09, 6.16602142e-09,
+                       6.16406432e-09, 6.16215159e-09, 6.16025809e-09, 6.15835221e-09,
+                       6.15639631e-09, 6.15434861e-09, 6.15216000e-09, 6.14977859e-09,
+                       6.14714626e-09, 6.14420110e-09, 6.14085091e-09, 6.13699440e-09,
+                       6.13252618e-09, 6.12732723e-09, 6.12127318e-09, 6.11421388e-09,
+                       6.10598205e-09, 6.09638051e-09, 6.08515375e-09, 6.07201408e-09,
+                       6.05665884e-09, 6.03874578e-09, 6.01789083e-09, 5.99361562e-09,
+                       5.96540859e-09, 5.93266855e-09, 5.89472001e-09, 5.85079398e-09,
+                       5.80007682e-09, 5.74164332e-09, 5.67455148e-09, 5.59781436e-09,
+                       5.51046272e-09, 5.41158287e-09, 5.30039017e-09, 5.17632952e-09,
+                       5.03909803e-09, 4.88847600e-09, 4.72441570e-09, 4.54723454e-09,
+                       4.35763107e-09, 4.15659391e-09, 3.94539467e-09, 3.72591842e-09,
+                       3.49997101e-09, 3.26985614e-09, 3.03790245e-09, 2.80664703e-09,
+                       2.57843685e-09, 2.35560644e-09, 2.14019809e-09, 1.93391038e-09,
+                       1.73819559e-09, 1.55412510e-09, 1.38243550e-09, 1.22386922e-09,
+                       1.07889518e-09, 9.47556249e-10, 8.29514941e-10, 7.24348205e-10,
+                       6.31192667e-10, 5.49258359e-10, 4.77617578e-10, 4.15295219e-10,
+                       3.61346281e-10, 3.14734252e-10, 2.74629039e-10, 2.40185833e-10,
+                       2.10747943e-10, 1.85758850e-10, 1.64740457e-10, 1.47285856e-10,
+                       1.33077259e-10, 1.21871725e-10, 1.13393656e-10, 1.07459137e-10,
+                       1.04010969e-10, 1.03088945e-10, 1.04181492e-10, 1.06761555e-10,
+                       1.10283829e-10, 1.14163747e-10, 1.17858983e-10, 1.20840878e-10,
+                       1.22552573e-10, 1.22901409e-10, 1.21936774e-10, 1.20066944e-10,
+                       1.17083445e-10, 1.13360779e-10, 1.08783137e-10, 1.03570401e-10,
+                       9.75917826e-11, 9.11088954e-11, 8.39765842e-11, 7.61178745e-11,
+                       6.79935241e-11, 6.17932461e-11, 6.17966997e-11, 6.21686621e-11,
+                       6.17810163e-11, 5.90059283e-11, 5.41402204e-11, 4.69897160e-11,
+                       3.96540264e-11, 3.32432305e-11, 2.83111959e-11, 2.46175330e-11,
+                       2.17711145e-11])
+    coeff=np.array([-3.90433229e-19,  1.99584747e-16, -4.47281751e-14,  5.77512092e-12,
+           -4.74851914e-10,  2.59465839e-08, -9.54424055e-07,  2.34369889e-05,
+           -3.73174981e-04,  3.64483013e-03, -1.98135679e-02,  5.00956221e-02,
+           -3.95132483e-02])
+    presscale=np.exp(np.polyval(coeff,sol_zen))
+    g=np.interp(np.log(pres/np.cos(sol_zen*d2r)*presscale),logp85corr,gA85)
+    if sol_zen > 90:
+        g = 0.0
+    return g
 
 def photolysis(alt, T, sol_zen, o, o2, o3, n2, co2):
     #alt in m
@@ -399,7 +421,7 @@ def photolysis(alt, T, sol_zen, o, o2, o3, n2, co2):
             z_step = np.array(z_step)
             #check the Earth's shadow
             if (z_step<0).any():
-                    z_step = np.zeros(nsteps)
+                z_step = np.zeros(nsteps)
         return (z_step, step)
     
     Jsrb, Jsrc, Jlya, Jherz, Jhart = [], [], [], [], []
@@ -420,14 +442,16 @@ def photolysis(alt, T, sol_zen, o, o2, o3, n2, co2):
         Jsrb.append(jo2[np.transpose(np.logical_and(wave>175,wave<200))].sum())
         Jherz.append(jo2[np.transpose(np.logical_and(wave>194,wave<240))].sum())
         Jlya.append(jo2[np.transpose(wave==121.567)].sum())
-        J1.append(jo2[np.transpose(np.logical_and(wave>177.5,wave<256))].sum()) #SRB+Herzberg?
-        J2.append(jo2[np.transpose(np.logical_and(wave<177.5,wave>0))].sum()) #SRC+Lya?
+
+        J1.append(jo2[np.transpose(np.logical_and(wave>177.5,wave<256))].sum())
+        J2.append(jo2[np.transpose(np.logical_and(wave>0,wave<177.5))].sum())
         J3.append(jo3[np.transpose(np.logical_and(wave>200.0,wave<320.0))].sum()*0.1+jo3[np.transpose(np.logical_and(wave>320.0,wave<730.0))].sum())
         J4.append(jo3[np.transpose(np.logical_and(wave>167.5,wave<200.0))].sum()+jo3[np.transpose(np.logical_and(wave>200.0,wave<320.0))].sum()*0.9)
 
-    return (np.array(Jhart), np.array(Jherz), np.array(Jsrc), np.array(Jsrb), np.array(Jlya), 
-            np.array(J1), np.array(J2), np.array(J3), np.array(J4))
-
+    return (
+        np.array(Jhart), np.array(Jherz), np.array(Jsrc), np.array(Jsrb), np.array(Jlya),
+        np.array(J1), np.array(J2)*factor, np.array(J3), np.array(J4),
+        )
 
 # %%
 # CREATION OF THE INTERPOLATED gA
@@ -515,26 +539,24 @@ def new_rates():
 # STARTING AT MIDDAY (12:00) OF THE 1ST DAY AND 
 # FINISHING AT MIDNITH (12:00) OF THE 4RD DAY 
 # FOR A TOTAL OF 4 DAYS OF INTEGRATION
-# WITH A TIME STEP OF 5 MINUTES
+# WITH A TIME STEP OF 15 MINUTES
 #
 #
 # RATES TO BE UPDATED TO ANQI'S
 def simulation(z, rates, tout, x0):
-    print('z={}km'.format(heights[z]))
+    print('z={}km'.format(z_model[z]))
     photolysis_rates = rates()
     
-    def system(values, t):
-        #First the concentrations
-        
-        O3        = values[0]     
-        O2        = values[1]     
-        O2_1Delta = values[2]
-        O2_1Sigma = values[3]    
-        O         = values[4] 
-        O_1D      = values[5]       
-        OH        = values[6]      
-        HO2       = values[7]      
-        H         = values[8]         
+    def system(x, t):
+        O3        = x[0]     
+        O2        = x[1]     
+        O2_1Delta = x[2]
+        O2_1Sigma = x[3]    
+        O         = x[4] 
+        O_1D      = x[5]       
+        OH        = x[6]      
+        HO2       = x[7]      
+        H         = x[8]         
         N2        = 4.0*O2
         M         = O2 + N2
         
@@ -549,12 +571,11 @@ def simulation(z, rates, tout, x0):
         r3 = k3 * O3 * OH
         
         #O2 reactions
-
-        f = 2 #solar variability on wavelength below 256nm
-        k4 = 1.07e-34*np.exp(510/T[z])
+        
+        k4 = 1.07e-34*np.exp(510/T[z]) #Federik (1979)
         k5 = 2.08e-32*np.exp(290/T[z])
-        J1 = eval(photolysis_rates[0] + "(z,norm_t(t))()") * f
-        J2 = eval(photolysis_rates[1] + "(z,norm_t(t))()") * f
+        J1 = eval(photolysis_rates[0] + "(z,norm_t(t))()")
+        J2 = eval(photolysis_rates[1] + "(z,norm_t(t))()")
         G  = eval(photolysis_rates[3] + "(z,norm_t(t))()")
         
         r4 = k4 * O2 * O * M
@@ -629,8 +650,12 @@ def simulation(z, rates, tout, x0):
                 dHO2dt,
                 dHdt]
 
-    yout = odeint(system, x0, tout, mxstep=5000000)
-    return yout
+    x_out = odeint(
+        system, x0, tout, 
+        mxstep=5000,#5000000, 
+        # hmin=1,
+        )
+    return x_out
 
 # %%
 # INTERPOLATION OF O2 AND O3 PHOTOLYSIS RATES WITH 
@@ -640,120 +665,108 @@ def simulation(z, rates, tout, x0):
 
 dt = 60*15 #s (15min interval)
 t_day = np.arange(0, 24*60*60+dt, dt) #s 
-month = int(sys.argv[1])
-lat = int(sys.argv[2])
 time = Time(pd.date_range(
     "2001-{}-15".format(str(month).zfill(2)), 
     freq="{}min".format(int(dt/60)), 
     periods=len(t_day)))
+
 loc = coord.EarthLocation(lon=0 * u.deg,
                         lat=lat * u.deg)
 altaz = coord.AltAz(location=loc, obstime=time)
 sun = coord.get_sun(time)
 Xi = sun.transform_to(altaz).zen.deg
 
-# np.seterr(divide='ignore', invalid='ignore')
+np.seterr(divide='ignore', invalid='ignore')
 
-# #EMPTY J's & G
-# J1_day = np.zeros((len(heights),len(Xi)))
-# J2_day = np.zeros((len(heights),len(Xi)))
-# J3_day = np.zeros((len(heights),len(Xi)))
-# J4_day = np.zeros((len(heights),len(Xi)))
-# G_factor_day = np.zeros((len(heights),len(Xi)))    
+#EMPTY J's & G
+J1_day = np.zeros((len(z_model),len(Xi)))
+J2_day = np.zeros((len(z_model),len(Xi)))
+J3_day = np.zeros((len(z_model),len(Xi)))
+J4_day = np.zeros((len(z_model),len(Xi)))
+G_factor_day = np.zeros((len(z_model),len(Xi)))    
 
-# j = 0
-# for sol_zen in tqdm(Xi):
-#     _,_,_,_,_, J1, J2, J3, J4 = photolysis(
-#         heights2*1e3, 
-#         T_extrapolated, 
-#         sol_zen,
-#         n_o_extrapolated,
-#         n_o2_extrapolated,
-#         n_o3_extrapolated,
-#         n_n2_extrapolated,
-#         n_co2_extrapolated)
-#     for z in range(len(heights)):        
-#         G_factor_day[z,j] = gA(pres[z],np.abs(sol_zen))
-#         J1_day[z,j] = eval("J1[z]")
-#         J2_day[z,j] = eval("J2[z]")
-#         J3_day[z,j] = eval("J3[z]")
-#         J4_day[z,j] = eval("J4[z]")
+j = 0
+for sol_zen in tqdm(Xi):
+    _,_,_,_,_, J1, J2, J3, J4 = photolysis(
+        z_model_extended*1e3, 
+        T_extended, 
+        sol_zen,
+        n_o_extended,
+        n_o2_extended,
+        n_o3_extended,
+        n_n2_extended,
+        n_co2_extended)
+    for z in range(len(z_model)):        
+        G_factor_day[z,j] = gA(pres[z],np.abs(sol_zen))
+        J1_day[z,j] = eval("J1[z]")
+        J2_day[z,j] = eval("J2[z]")
+        J3_day[z,j] = eval("J3[z]")
+        J4_day[z,j] = eval("J4[z]")
         
-#     j += 1
+    j += 1
 
-# da_Js = xr.DataArray(
-#     [J1_day, J2_day, J3_day, J4_day, G_factor_day], 
-#     dims=('species', 'z', 't'), 
-#     coords=(
-#         ('species', 'J1_day, J2_day, J3_day, J4_day, G_factor_day'.split(', ')),
-#         ('z', heights, dict(units='km')),
-#         ('t', t_day, dict(units='s'))
-#         ),
-#     )
-# da_Js.to_dataset('species').assign(
-#     sza=xr.DataArray(Xi, dims=('t',)), 
-#     month=month,
-#     lat=lat
-#     ).to_netcdf(path+'results_nc/J2_factor2/Js_{}_{}.nc'.format(month, lat), mode='w')
+da_Js = xr.DataArray(
+    [J1_day, J2_day, J3_day, J4_day, G_factor_day], 
+    dims=('species', 'z', 't'), 
+    coords=(
+        ('species', 'J1_day, J2_day, J3_day, J4_day, G_factor_day'.split(', ')),
+        ('z', z_model, dict(units='km')),
+        ('t', t_day, dict(units='s'))
+        ),
+    )
+da_Js.to_dataset('species').assign_coords(
+    sza=xr.DataArray(Xi, dims=('t',)), 
+    month=month,
+    lat=lat
+    ).to_netcdf(path+'results_nc/J2_factor{}/Js_{}_{}.nc'.format(factor,month, lat), mode='w')
+
+# with xr.open_dataset(path+'results_nc/Js_{}_{}.nc'.format(month, lat)) as ds_Js:
+#     J1_day, J2_day, J3_day, J4_day, G_factor_day = ds_Js.interp(z=z_model)[
+#         'J1_day J2_day J3_day J4_day G_factor_day'.split()].to_array('var').values
+#     Xi, t_day = ds_Js['sza t'.splie()].to_array('var').values
 
 # %%
 #running all simulations
-# t_ini = 12*60*60
-# t_end = (24*4)*60*60
-# dt = 10*60 #10 minute inteval
-# tout = np.arange(t_ini, t_end+dt, dt) #s (5min inteval)
-# # sim1 = []
-# # for zi, alt in enumerate(heights):
-# #     yout = simulation(zi, rates, tout)
-# #     sim1.append(yout)
-# def fun(zi):
-#     x0 = [n_o3[zi],
-#           n_o2[zi],
-#           n_o2_1Delta[zi],
-#           n_o2_1Sigma[zi],
-#           n_o[zi],
-#           n_o_1D[zi],
-#           n_oh[zi],
-#           n_ho2[zi],
-#           n_h[zi]]
-#     return simulation(zi, rates, tout, x0)
-# with Pool(processes=8) as p:
-#     sim1 = p.map(fun, range(len(heights)))
+t_ini = 12*60*60
+t_end = (24*4)*60*60
+dt = 10*60 #10 minute inteval
+tout = np.arange(t_ini, t_end+dt, dt) #s (5min inteval)
 
-# species = 'O3,O2,O2_1Delta,O2_1Sigma,O,O_1D,OH,HO2,H'.split(',')
-# sim1 = xr.DataArray(
-#     sim1, 
-#     dims=('z', 't', 'species'), 
-#     coords=(
-#         ('z', heights, dict(units='km')),
-#         ('t', tout, dict(units='s')), 
-#         ('species', species)
-#         ),
-#     )
-# sim1.to_dataset('species').assign(
-#     month=month, lat=lat
-#     ).to_netcdf(path+'results_nc/J2_factor2/sim1_{}_{}.nc'.format(month,lat))
-#%% load sim1 results
-with xr.open_dataset(
-    path+'results_nc/J2_factor2/sim1_{}_{}.nc'format(month, lat)
-    ) as sim1:
-    sim1 = sim1.drop_vars(['month', 'lat']).to_array('species')
+def fun(zi):
+    x0 = n.to_array('species').isel(z=zi).values
+    return simulation(zi, rates, tout, x0)
+with Pool(processes=len(z_model)) as p:
+    sim1 = p.map(fun, range(len(z_model)))
+
+species = 'O3,O2,O2_1Delta,O2_1Sigma,O,O_1D,OH,HO2,H'.split(',')
+sim1 = xr.DataArray(
+    sim1, 
+    dims=('z', 't', 'species'), 
+    coords=(
+        ('z', z_model, dict(units='km')),
+        ('t', tout, dict(units='s')), 
+        ('species', species)
+        ),
+    )
+sim1.to_dataset('species').assign_coords(
+    month=month, lat=lat
+    ).to_netcdf(path+'results_nc/J2_factor{}/sim1_{}_{}.nc'.format(factor, month,lat))
 
 # %%
 # GETTING THE NEW O & O3 AS FUNCTION OF TIME IN A DAY
 # DURING THE LAST INTEGRATION DAY
-new_o3 = sim1.sel(
+new_o3_extended = sim1.sel(
     species='O3', 
-    ).interp(
-        z=heights2, t=t_day+3*24*3600,
+    ).pipe(np.log).interp(
+        z=z_model_extended, t=t_day+3*24*3600,
         kwargs=dict(fill_value='extrapolate')
-        ).values
-new_o = sim1.sel(
+        ).pipe(np.exp).values
+new_o_extended = sim1.sel(
     species='O', 
-    ).interp(
-        z=heights2, t=t_day+3*24*3600,
+    ).pipe(np.log).interp(
+        z=z_model_extended, t=t_day+3*24*3600,
         kwargs=dict(fill_value='extrapolate')
-        ).values
+        ).pipe(np.exp).values
 
 # %%
 # CALCULATE THE NEW PHOTOLYSIS RATES BASED ON THE NEW O & O3 CONCENTRATIONS DURING THE DAY
@@ -761,21 +774,21 @@ new_o = sim1.sel(
 np.seterr(divide='ignore', invalid='ignore',over='ignore')
 
 #EMPTY J's & G
-new_J1_day = np.zeros((len(heights),len(Xi)))
-new_J2_day = np.zeros((len(heights),len(Xi)))
-new_J3_day = np.zeros((len(heights),len(Xi)))
-new_J4_day = np.zeros((len(heights),len(Xi)))    
+new_J1_day = np.zeros((len(z_model),len(Xi)))
+new_J2_day = np.zeros((len(z_model),len(Xi)))
+new_J3_day = np.zeros((len(z_model),len(Xi)))
+new_J4_day = np.zeros((len(z_model),len(Xi)))    
 
 j = 0
 for sol_zen in tqdm(Xi):
     _, _, _, _, _, J1, J2, J3, J4 = photolysis(
-        heights2*1e3, T_extrapolated, sol_zen,
-        new_o[:,j],
-        n_o2_extrapolated,
-        new_o3[:,j],
-        n_n2_extrapolated,
-        n_co2_extrapolated)
-    for z in range(len(heights)):        
+        z_model_extended*1e3, T_extended, sol_zen,
+        new_o_extended[:,j],
+        n_o2_extended,
+        new_o3_extended[:,j],
+        n_n2_extended,
+        n_co2_extended)
+    for z in range(len(z_model)):        
         new_J1_day[z,j] = eval("J1[z]")
         new_J2_day[z,j] = eval("J2[z]")
         new_J3_day[z,j] = eval("J3[z]")
@@ -787,43 +800,41 @@ da_Js = xr.DataArray(
     dims=('species', 'z', 't'), 
     coords=(
         ('species', 'new_J1_day, new_J2_day, new_J3_day, new_J4_day'.split(', ')),
-        ('z', heights, dict(units='km')),
+        ('z', z_model, dict(units='km')),
         ('t', t_day, dict(units='s'))
         ),
     )
-da_Js.to_dataset('species').to_netcdf(
-    path+'results_nc/J2_factor2/Js_factor2_{}_{}.nc'.format(month, lat), mode='w')
+da_Js.to_dataset('species').assign_coords(
+    sza=xr.DataArray(Xi, dims=('t',)), 
+    month=month,
+    lat=lat
+    ).to_netcdf(
+    path+'results_nc/J2_factor{}/Js_{}_{}.nc'.format(factor,month, lat), mode='a')
 
 # %%
 #running all simulations again
-
-# sim2 = []
-# for zi, alt in enumerate(heights):
-#     yout = simulation(zi, rates, tout)
-#     sim2.append(yout)
 # dt = 10*60 # 10min
 tout = np.arange(0, 3*24*3600+dt, dt) + sim1.t[-1].values #s
 def fun(zi):
     x0 = sim1.isel(t=-1, z=zi).values
     return simulation(zi, new_rates, tout, x0)
 
-with Pool(processes=8) as p:
-    sim2 = p.map(fun, range(len(heights)))
+with Pool(processes=len(z_model)) as p:
+    sim2 = p.map(fun, range(len(z_model)))
 
-species = 'O3,O2,O2_1Delta,O2_1Sigma,O,O_1D,OH,HO2,H'.split(',')
 sim2 = xr.DataArray(
     sim2, 
     dims=('z', 't', 'species'), 
     coords=(
-        ('z', heights, dict(units='km')),
+        ('z', z_model, dict(units='km')),
         ('t', tout, dict(units='s')), 
         ('species', species)
         ),
     )
 xr.concat(
     [sim1,sim2], dim='t'
-    ).to_dataset('species').assign(
+    ).to_dataset('species').assign_coords(
         month=month, lat=lat
-        ).to_netcdf(path+'results_nc/J2_factor2/sim2_factor2_{}_{}.nc'.format(month,lat))
+        ).to_netcdf(path+'results_nc/J2_factor{}/sim2_{}_{}.nc'.format(factor,month,lat))
 
 # %%
